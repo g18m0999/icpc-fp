@@ -20,22 +20,27 @@ let findLongestWordLength (input:string) =
   let words = stringSplit ' ' input
   List.fold (fun maxLength word -> largestNumber maxLength (String.length word) ) 0 words
 
+/// Check if sentence meets the minimum length requirements
+let isInRangeOfMinRequirement (input:string) (minLength:int) =
+  match String.length input >= minLength with 
+  | true -> System.Char.IsLetter input.[0]
+  | _ -> false
+
 /// Only lowercase letter, comma, period and space are vaild charactors
-let isValidCase (input:string) =
+let validCharsInString (input:string) =
   let isValidChar (ch:char) = 
     match  System.Char.IsLetter ch with
     | true -> System.Char.IsLower ch
     | _ -> ",. ".Contains((string ch))
-  
-  let isInRangeAndfirstCharIsLetter =
-    match String.length input >= 2 with 
-    | true -> System.Char.IsLetter input.[0]
-    | _ -> false
+  String.forall isValidChar input
 
-  let allowedChars = String.forall isValidChar input
+let isValidCase (input:string) =
+  let allowedChars = validCharsInString input
+  let isInRange = isInRangeOfMinRequirement input 2
   let isTerminationsValid = isStringTerminationValid input
 
-  allowedChars && isInRangeAndfirstCharIsLetter && isTerminationsValid
+
+  allowedChars && isInRange && isTerminationsValid
 
 let commaSprinkler (input:string) =
   //stringSplit '.' input
