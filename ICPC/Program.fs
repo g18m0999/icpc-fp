@@ -13,7 +13,6 @@ type PunctuationIndex =
 type TokenCase<'a> =
   | Add of 'a
   | Skip
-  | Error
 
 type Token = {
   input: string
@@ -66,23 +65,6 @@ let punctuationPosition (input:string) (punctuation:char) =
 let getWordOnly (input:string) =
   String.filter Char.IsLetter input
 
-/// easy utility to create a single token instance
-let createToken (input:string) (preceded:bool) (succeeded:bool) =
-  let sanitizedInput = getWordOnly input
-  Add { input=input; word=sanitizedInput; preceded=preceded; succeeded=succeeded }
-
-/// create word token -- TODO
-let wordTokenBuilder (prevWord: string) (current:string) = 
-  let prevWordToken = punctuationPosition prevWord COMMA
-  let wordToken = punctuationPosition current COMMA
-
-  match prevWordToken, wordToken with
-  | End, End -> createToken current true true
-  | Nothing, End -> createToken current false true
-  | End, Nothing  -> createToken current true false
-  | Nothing, Nothing -> Skip
-  | _ -> Error
-
 /// validates whether the string is properly punctuated
 let isPunctuationValid (words: string list) =
   let predicate (punctuation:char) (word:string) =
@@ -117,19 +99,77 @@ let emptyEntriesOrPunctuationOnly (words: string list) =
   | None -> isNullOrWhiteSpace
   | Some _ -> true
 
-//let updateWatchList (wList: Token list) (prevWord: string) (current:string) =
-//  let token = wordTokenBuilder prevWord current
+/// easy utility to create a single token instance
+let createToken (input:string) (preceded:bool) (succeeded:bool) =
+  let sanitizedInput = getWordOnly input
+  Add { input=input; word=sanitizedInput; preceded=preceded; succeeded=succeeded }
+  
+/// create word token -- TODO
+let wordTokenBuilder (prevWord: string) (current:string) = 
+  let prevWordToken = punctuationPosition prevWord COMMA
+  let wordToken = punctuationPosition current COMMA
+  match prevWordToken, wordToken with
+  | End, End -> createToken current true true
+  | Nothing, End -> createToken current false true
+  | End, Nothing  -> createToken current true false
+  | _ -> Skip
 
-// /// create a watchlist
-// let createWatchList (words:string list) =
-//  let rec helper _in wList prevItem = 
-//    match _in with
-//    | [] -> wList
-//    | elem::[] -> updateWatchList wList prevItem elem
-//    | elem::rest -> 
-//      let watchList = updateWatchList wList prevItem elem
-//      helper rest watchList elem
-//  helper words [] String.Empty
+let retrieveTokenFromWatchList (word:string) (wList:Token list) =
+  List.tryFind (fun x -> x.word = word) wList
+
+let aggregateTokenAndCase (token: Token) (case: Token) =
+  let mergedToken = 
+    createToken (token.input) (token.preceded || case.preceded) (token.succeeded || case.succeeded)
+  mergedToken
+
+let updateWatchList (wList: Token list) (previousWord: string) (currentWord:string) =
+  let previousToken =  retrieveTokenFromWatchList (getWordOnly previousWord) wList
+  let currentToken = retrieveTokenFromWatchList (getWordOnly currentWord) wList
+
+  let token =
+    match previousToken, currentToken with
+    | None, None -> wordTokenBuilder previousWord currentWord
+    | Some previous, None -> wordTokenBuilder previous.input currentWord
+    | None, Some current -> 
+      let case = wordTokenBuilder previousWord current.input
+      match case with
+      | Skip -> createToken previousWord false current.preceded
+      | Add v -> aggregateTokenAndCase current v
+    | Some previous, Some current ->
+      let case = wordTokenBuilder previousWord currentWord
+      match case with
+      | Skip -> case
+      | Add v -> aggregateTokenAndCase current v
+
+  match token with
+  | Add v -> v::wList
+  | Skip -> wList
+
+/// create a watchlist
+let createWatchList (words:string list) =
+  let rec helper _in wList prevItem = 
+    match _in with
+    | [] -> wList
+    | elem::[] -> updateWatchList wList prevItem elem
+    | elem::rest -> 
+      let watchList = updateWatchList wList prevItem elem
+      helper rest watchList elem
+  helper words [] String.Empty
+
+let stringBuilder (token:Token) =
+  match token.preceded, token.succeeded with
+  | true, true -> ", "+token.word+", "
+  | true, false -> ", "+token.word+" "
+  | false, false -> token.word+" "
+  | false, true -> token.word+", "
+
+let watchListFolder (wList:Token list) (state:string) (entry:string) =
+  let tokenOp = retrieveTokenFromWatchList (getWordOnly entry) wList
+  let text =
+    match tokenOp with
+    | Some token -> stringBuilder token
+    | None -> entry
+  state+text
 
 /// Validates the cse if its valid
 let isValidCase (input:string) =
@@ -144,11 +184,13 @@ let isValidCase (input:string) =
 
   match isValid with
   | false -> None
-  | _ -> Some input
+  | _ -> 
+    let wList = createWatchList words
+    let str = List.fold (watchListFolder wList) String.Empty words 
+    Some str
 
 let commaSprinkler (input:string) =
-  //stringSplit ' ' input
-  isValidCase input
+  isValidCase input 
 
 let rivers (input:string) =
   failwith "Not implemented"
