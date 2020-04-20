@@ -6,7 +6,6 @@ open FsUnit
 [<Test>]
 let ``Comma sprinkler, input 1`` () =
     commaSprinkler "please sit spot. sit spot, sit. spot here now here."
-    //findLongestWordLength  "please sit spot. sit 01234567 spot, sit. spot here now here."
     |> should equal (Some "please, sit spot. sit spot, sit. spot, here now, here.")
 
 [<Test>]
@@ -18,6 +17,11 @@ let ``Comma sprinkler, input 2`` () =
 let ``Comma sprinkler, input 3`` () =
     commaSprinkler "test." |> should equal (Some "test.")
 
+[<Test>]
+let ``Comma sprinkler, input 4`` () =
+    commaSprinkler "dream live forever, live die today. yesterday you said tomorrow. need easy, need, worth."
+    |> should equal (Some "dream, live forever, live die today. yesterday you said tomorrow. need, easy, need, worth.")
+    
 [<Test>]
 let ``Comma sprinkler, error case 1`` () =
     commaSprinkler "" |> should equal None

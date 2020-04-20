@@ -3,7 +3,7 @@ open System
 
 type SplitOption =
   | Default
-  | RemoveEmptyOptions
+  | RemoveEmpty
   
 type PunctuationIndex =
   | Nothing
@@ -28,7 +28,7 @@ let stringSplit (input:string) (separator:char) (splitOption: SplitOption) =
   let words = input.Split separator |> List.ofArray
   match splitOption with
   | Default -> words
-  | RemoveEmptyOptions -> words |> List.filter (fun x-> String.length x > 0)
+  | RemoveEmpty -> words |> List.filter (fun x-> String.length x > 0)
 
 /// Check if last sentence is terminated with a period
 let isStringTerminationValid (input:string) =
@@ -136,7 +136,10 @@ let updateWatchList (wList: Token list) (previousWord: string) (currentWord:stri
       | Skip -> createToken previousWord false current.preceded
       | Add v -> aggregateTokenAndCase current v
     | Some previous, Some current ->
-      let case = wordTokenBuilder previousWord currentWord
+      let case = 
+        match previous.word=current.word && previous.succeeded with
+        | true -> wordTokenBuilder (previous.input+",") current.input
+        | false -> wordTokenBuilder previous.input current.input
       match case with
       | Skip -> case
       | Add v -> aggregateTokenAndCase current v
@@ -156,20 +159,42 @@ let createWatchList (words:string list) =
       helper rest watchList elem
   helper words [] String.Empty
 
+let removeAdjacentComma (_out:string) (word:string) =
+  match String.IsNullOrEmpty _out with
+  | true -> word
+  | false ->
+    match _out.[(String.length _out) - 1]=COMMA, word.[0]=COMMA with
+    | true, true -> _out+" "+word.[1..]
+    | _, true -> _out+word
+    | _ -> _out+" "+word
+
 let stringBuilder (token:Token) =
   match token.preceded, token.succeeded with
-  | true, true -> ", "+token.word+", "
-  | true, false -> ", "+token.word+" "
-  | false, false -> token.word+" "
-  | false, true -> token.word+", "
+  | true, true -> ", "+token.word+","
+  | true, false -> ", "+token.word+""
+  | false, false -> token.word+""
+  | false, true -> token.word+","
 
 let watchListFolder (wList:Token list) (state:string) (entry:string) =
   let tokenOp = retrieveTokenFromWatchList (getWordOnly entry) wList
   let text =
     match tokenOp with
-    | Some token -> stringBuilder token
+    | Some token -> 
+      match entry.Contains (string PERIOD) with 
+      | false -> stringBuilder token
+      | true -> stringBuilder { token with word=entry }
     | None -> entry
-  state+text
+  removeAdjacentComma (state.Trim()) (text.Trim())
+
+let formatAndCleanText (input:string) =
+  let helper (word:string) =
+    match word.IndexOf "." with
+    | -1 -> word
+    | idx -> word.[..idx]
+
+  let words = List.filter (fun x -> x<>",") (stringSplit input SPACE RemoveEmpty)
+  List.map helper words
+  |> String.concat " " 
 
 /// Validates the cse if its valid
 let isValidCase (input:string) =
@@ -187,10 +212,11 @@ let isValidCase (input:string) =
   | _ -> 
     let wList = createWatchList words
     let str = List.fold (watchListFolder wList) String.Empty words 
-    Some str
+    Some (formatAndCleanText str)
+    //Some str
 
 let commaSprinkler (input:string) =
-  isValidCase input 
+  isValidCase input
 
 let rivers (input:string) =
   failwith "Not implemented"
