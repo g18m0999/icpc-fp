@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Rivers.fs" />
+    <Compile Include="CommaSprinkler.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
