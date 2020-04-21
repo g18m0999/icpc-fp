@@ -8,6 +8,17 @@ module Utils =
     river_length:int
   }
 
+  type River = {
+    start_row:int
+    start_column:int
+    length:int
+  }
+
+  type State = {
+    text:string
+    length:int
+  }
+
   type SplitOption =
     | Default
     | RemoveEmpty
@@ -38,35 +49,59 @@ module Utils =
     | None -> false
     | Some _ -> true
 
+  let stringConcatWords (state:string) (entry:string) =
+    let newState = (state+WHITESPACE+entry).Trim()
+    { text=newState; length=(String.length newState) }
+
+  let stringConcatList (words:string list) =
+    let rec helper _in _out =
+      match _in with
+      | [] -> _out
+      | entry::rest -> 
+        helper rest (stringConcatWords _out.text entry)
+    helper words { text=String.Empty; length=0 }
+
+  /// Checks if a given string has lowercase, uppercase letters and whitespaces (SPACE)
+  let isAllowedCharacters (input:string) = 
+    let isValid = (fun ch -> Char.IsLetter ch || Char.IsSeparator ch)
+    (String.forall isValid input)
+
   /// Reshapes the words list by lin-width
   let reshape (lineWidth:int) (words:string list) =
     let rec helper _in _out state =
       match _in with
       | [] -> (_out@[state])
       | entry::rest ->
-        let newState = (state+WHITESPACE+entry).Trim()
-        match (String.length newState) <= lineWidth with
-        | true -> helper rest _out newState
+        let newState = stringConcatWords state entry
+        match newState.length <= lineWidth with
+        | true -> helper rest _out newState.text
         | false -> helper _in (_out@[state]) WHITESPACE
     helper words [] String.Empty
 
+  let searchForRivers (startLineWidth:int) (words:string list) =
+    match (List.length words) = MIN_NUMBER_OF_WORDS with
+    | true -> Some ((stringConcatList words).length, 1)
+    | false -> Some (1, 5)
+
+  
   let processInput (input:string) =
     let words = stringSplit input ' ' Default
+    let longestWordLength = findLongestWordLength words
+
+    let isInputValid =
+      true
+      |> (&&) (isAllowedCharacters input)
+      |> (&&) (List.length words >= MIN_NUMBER_OF_WORDS)
+      |> (&&) (longestWordLength <= MAX_WORD_LENGTH)
+      |> (&&) (not (emptyEntriesExist words))
+
+    match isInputValid with
+    | false -> None
+    | true -> searchForRivers longestWordLength words
 
 
-    //let longestWord = findLongestWordLength words
-
-    //let isInputValid =
-    //  true
-    //  |> (&&) (String.forall Char.IsLetter input)
-    //  |> (&&) (List.length words >= MIN_NUMBER_OF_WORDS)
-    //  |> (&&) (longestWord <= MAX_WORD_LENGTH)
-    //  |> (&&) (emptyEntriesExist words)
-
-    //match isInputValid with
-    //| false -> None
-    //| true -> (Some (1, 5))
-
+//let words = stringSplit "hi  world" ' ' Default
+//emptyEntriesExist words
 
 
 //reshape 15 words
