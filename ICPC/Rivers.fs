@@ -78,12 +78,31 @@ module Utils =
         | false -> helper _in (_out@[state]) WHITESPACE
     helper words [] String.Empty
 
-  let searchForRivers (startLineWidth:int) (words:string list) =
-    match (List.length words) = MIN_NUMBER_OF_WORDS with
-    | true -> Some ((stringConcatList words).length, 1)
-    | false -> Some (1, 5)
+  let searchhelper (words:string list) =
+    []
+    //match (List.length words) <= (MIN_NUMBER_OF_WORDS+1) with 
+    //| true -> Some ((stringConcatList words).length, 1)
+    //| false -> searchhelper startLineWidth words
 
-  
+    //let rec inner (_in:string list) (index:int) _out =
+    //  match _in with
+    //  | [] -> _out
+    //  | row::matrix ->
+    //    let spaceIndex = row.IndexOf WHITESPACE
+    //    match spaceIndex with
+    //    | -1 ->  
+
+  let searchForRivers (startLineWidth:int) (words:string list) =
+    let rec rivers (start:int) (_out: 'a list) =
+      let reshaped = reshape start words
+      match (List.length reshaped) = 1 with
+      | true -> _out@(searchhelper reshaped)
+      | false ->
+        let result = _out@(searchhelper reshaped)
+        rivers (start+1) result
+        
+    rivers startLineWidth []
+
   let processInput (input:string) =
     let words = stringSplit input ' ' Default
     let longestWordLength = findLongestWordLength words
@@ -97,7 +116,12 @@ module Utils =
 
     match isInputValid with
     | false -> None
-    | true -> searchForRivers longestWordLength words
+    | true -> 
+      // TODO -- Finalize the logic
+      let rivers = searchForRivers longestWordLength words
+      
+      // Defaulting with random values
+      Some (1, 5)
 
 
 //let words = stringSplit "hi  world" ' ' Default
