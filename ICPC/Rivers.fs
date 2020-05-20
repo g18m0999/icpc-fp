@@ -71,14 +71,6 @@ module Utils =
         | false -> helper _in (_out@[state]) WHITESPACE
     helper words [] String.Empty
 
-  let stringConcatList (words:string list) =
-    let rec helper _in _out =
-      match _in with
-      | [] -> _out
-      | entry::rest -> 
-        helper rest (stringConcat _out.text entry)
-    helper words { text=String.Empty; length=0 }
-
   let getWhitespaceCoordinates (line:string) (row:int) = 
     let rec helper (start:int) _out =
       let index = line.IndexOf(WHITESPACE, start)
@@ -98,7 +90,15 @@ module Utils =
         helper t (index+1) coords
     helper words 0 []
 
-  let searchForRivers (startLineWidth:int) (words:string list) =
+  let stringConcatList (words:string list) =
+    let rec helper _in _out =
+      match _in with
+      | [] -> _out
+      | entry::rest -> 
+        helper rest (stringConcat _out.text entry)
+    helper words { text=String.Empty; length=0 }
+
+  let searchForRivers (startLineWidth:int) (words:string list) = failwith ""
     //let rec helper (length:int) (_out: 'a list) =
     //  let resizedStrList = reshape length words
     //  flattenListToCoordinates resizedStrList
@@ -118,7 +118,7 @@ module Utils =
     | false -> None
     | true -> 
       // TODO -- Finalize the logic
-      let rivers = searchForRivers longestWordLength words
+      // let rivers = searchForRivers longestWordLength words
       
       // Defaulting with random values
       Some (1, 5)
