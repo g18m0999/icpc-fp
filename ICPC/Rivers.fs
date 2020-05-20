@@ -43,23 +43,16 @@ module Utils =
     List.fold (fun maxLength word -> largestNumber maxLength (String.length word) ) 0 words
 
   /// Given a list of strings, checks if an empty entries exists 
-  let emptyEntriesExist (words:string list) =
+  let emptyEntriesExist (words:string list) : bool =
     let result = List.tryFind (fun word -> String.Empty=word) words 
     match result with
     | None -> false
     | Some _ -> true
 
-  let stringConcatWords (state:string) (entry:string) =
-    let newState = (state+WHITESPACE+entry).Trim()
+  /// Given two strings, concatenates and returns the new string and its length
+  let stringConcat (state:string) (entry:string) =
+    let newState = (String.concat WHITESPACE (state::entry::[])).Trim()
     { text=newState; length=(String.length newState) }
-
-  let stringConcatList (words:string list) =
-    let rec helper _in _out =
-      match _in with
-      | [] -> _out
-      | entry::rest -> 
-        helper rest (stringConcatWords _out.text entry)
-    helper words { text=String.Empty; length=0 }
 
   /// Checks if a given string has lowercase, uppercase letters and whitespaces (SPACE)
   let isAllowedCharacters (input:string) = 
@@ -72,36 +65,43 @@ module Utils =
       match _in with
       | [] -> (_out@[state])
       | entry::rest ->
-        let newState = stringConcatWords state entry
+        let newState = stringConcat state entry
         match newState.length <= lineWidth with
         | true -> helper rest _out newState.text
         | false -> helper _in (_out@[state]) WHITESPACE
     helper words [] String.Empty
 
-  let searchhelper (words:string list) =
-    []
-    //match (List.length words) <= (MIN_NUMBER_OF_WORDS+1) with 
-    //| true -> Some ((stringConcatList words).length, 1)
-    //| false -> searchhelper startLineWidth words
+  let stringConcatList (words:string list) =
+    let rec helper _in _out =
+      match _in with
+      | [] -> _out
+      | entry::rest -> 
+        helper rest (stringConcat _out.text entry)
+    helper words { text=String.Empty; length=0 }
 
-    //let rec inner (_in:string list) (index:int) _out =
-    //  match _in with
-    //  | [] -> _out
-    //  | row::matrix ->
-    //    let spaceIndex = row.IndexOf WHITESPACE
-    //    match spaceIndex with
-    //    | -1 ->  
+  let getWhitespaceCoordinates (line:string) (row:int) = 
+    let rec helper (start:int) _out =
+      let index = line.IndexOf(WHITESPACE, start)
+      match index = -1 with
+      | true -> _out
+      | _ -> 
+        let coordinate = (row, index)
+        helper (index+1) (coordinate::_out)
+    helper 0 []
+
+  let flattenListToCoordinates (words:string list) =
+    let rec helper words index _out =
+      match words with 
+      | [] -> _out
+      | h::t -> 
+        let coords = (getWhitespaceCoordinates h index)@_out
+        helper t (index+1) coords
+    helper words 0 []
 
   let searchForRivers (startLineWidth:int) (words:string list) =
-    let rec rivers (start:int) (_out: 'a list) =
-      let reshaped = reshape start words
-      match (List.length reshaped) = 1 with
-      | true -> _out@(searchhelper reshaped)
-      | false ->
-        let result = _out@(searchhelper reshaped)
-        rivers (start+1) result
-        
-    rivers startLineWidth []
+    //let rec helper (length:int) (_out: 'a list) =
+    //  let resizedStrList = reshape length words
+    //  flattenListToCoordinates resizedStrList
 
   let processInput (input:string) =
     let words = stringSplit input ' ' Default

@@ -89,12 +89,9 @@ module Utils =
   /// Checks for empty entries or entries with punctuation only
   let emptyEntriesOrPunctuationOnly (words: string list) =
     let isNullOrWhiteSpace = 
-      match List.filter String.IsNullOrWhiteSpace words with
-      | [] -> false
-      | head::tail -> true
+      List.length (List.filter String.IsNullOrWhiteSpace words) > 0
 
-    let predicate (word:string) =
-      Char.IsPunctuation word.[0]
+    let predicate (word:string) = Char.IsPunctuation word.[0]
 
     let singleCharString = List.filter (fun word -> String.length word = 1) words
     match List.tryFind predicate (singleCharString) with
