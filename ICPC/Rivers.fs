@@ -98,10 +98,39 @@ module Utils =
         helper rest (stringConcat _out.text entry)
     helper words { text=String.Empty; length=0 }
 
-  let searchForRivers (startLineWidth:int) (words:string list) = failwith ""
-    //let rec helper (length:int) (_out: 'a list) =
-    //  let resizedStrList = reshape length words
-    //  flattenListToCoordinates resizedStrList
+  // Searchs a list with (x,y) coordinate entries, return an adjacent entry to the input
+  let tryFindAdjacentFromList (r, c) coords = 
+    let rec helper candidates entry =
+      match candidates, entry=None with
+      | [], _ -> None
+      | _, false -> entry
+      | (row, column)::t, _ ->  
+        let entry = List.tryFind (fun coordEntry -> coordEntry = (row, column) ) coords
+        helper t entry
+
+    let row = r+1
+    let candidates = (row, c-1)::(row, c)::(row, c+1)::[]
+    helper candidates None
+
+  let removeEntryFromList (row, column) coords = 
+    List.filter (fun coordEntry -> coordEntry <> (row, column) ) coords
+
+  let searchForRivers (lineWidth:int) (words:string list) =
+    let rec helper coords maxLength =
+      match coords with
+      | [] -> maxLength+1
+      | h::t ->
+        match (tryFindAdjacentFromList h t) with
+        | None -> 
+          let (h::t) = rest
+          helper (maxLength+1) h t
+        | Some v -> 
+          tryFindAdjacentFromList v t
+
+
+    let resizedStrList = reshape lineWidth words
+    let coords = List.rev (flattenListToCoordinates resizedStrList)
+    helper coords 0 
 
   let processInput (input:string) =
     let words = stringSplit input ' ' Default
@@ -122,13 +151,6 @@ module Utils =
       
       // Defaulting with random values
       Some (1, 5)
-
-
-//let words = stringSplit "hi  world" ' ' Default
-//emptyEntriesExist words
-
-
-//reshape 15 words
 
 //processInput "The Yangtze is the third longest river in Asia and the longest in the world to flow entirely in one country"
 //processInput "When two or more rivers meet at a confluence other than the sea the resulting merged river takes the name of one of those rivers"
