@@ -8,17 +8,6 @@ module Utils =
     river_length:int
   }
 
-  type River = {
-    start_row:int
-    start_column:int
-    length:int
-  }
-
-  type State = {
-    text:string
-    length:int
-  }
-
   type SplitOption =
     | Default
     | RemoveEmpty
@@ -54,10 +43,9 @@ module Utils =
     | None -> false
     | Some _ -> true
 
-  /// Given two strings, concatenates and returns the new string and its length
+  /// Given two strings, concatenates and returns the new string
   let stringConcat (state:string) (entry:string) =
-    let newState = (String.concat WHITESPACE (state::entry::[])).Trim()
-    { text=newState; length=(String.length newState) }
+    (String.concat WHITESPACE (state::entry::[])).Trim()
 
   /// Checks if a given string has lowercase, uppercase letters and whitespaces (SPACE)
   let isAllowedCharacters (input:string) = 
@@ -71,8 +59,8 @@ module Utils =
       | [] -> (_out@[state])
       | entry::rest ->
         let newState = stringConcat state entry
-        match newState.length <= lineWidth with
-        | true -> helper rest _out newState.text
+        match (String.length newState) <= lineWidth with
+        | true -> helper rest _out newState
         | false -> helper _in (_out@[state]) WHITESPACE
     helper words [] String.Empty
 
@@ -131,8 +119,8 @@ module Utils =
       match _in with
       | [] -> _out
       | entry::rest -> 
-        helper rest (stringConcat _out.text entry)
-    helper words { text=String.Empty; length=0 }
+        helper rest (stringConcat _out entry)
+    helper words String.Empty
 
   let processInput (input:string) =
     let words = stringSplit input ' ' Default
