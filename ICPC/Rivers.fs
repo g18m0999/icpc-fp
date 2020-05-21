@@ -26,6 +26,11 @@ module Utils =
   let MAX_WORD_LENGTH, MIN_NUMBER_OF_WORDS = 80, 2
   let WHITESPACE = " "
 
+  let max (a:int) (b:int) =
+    match a>b with
+    | true -> a
+    | _ -> b
+
   /// Given a char separator and string, it splits it up into List of parts
   let stringSplit (input:string) (separator:char) (splitOption: SplitOption) = 
     let words = input.Split separator |> List.ofArray
@@ -71,6 +76,7 @@ module Utils =
         | false -> helper _in (_out@[state]) WHITESPACE
     helper words [] String.Empty
 
+  /// Gets a string, and finds all the indexes of whitespaces in that string 
   let getWhitespaceCoordinates (line:string) (row:int) = 
     let rec helper (start:int) _out =
       let index = line.IndexOf(WHITESPACE, start)
@@ -81,6 +87,7 @@ module Utils =
         helper (index+1) (coordinate::_out)
     helper 0 []
 
+  /// Imagine a list of strings as jaggered matrix, this finds all the whitespaces and rep
   let flattenListToCoordinates (words:string list) =
     let rec helper words index _out =
       match words with 
@@ -90,20 +97,11 @@ module Utils =
         helper t (index+1) coords
     helper words 0 []
 
-  let stringConcatList (words:string list) =
-    let rec helper _in _out =
-      match _in with
-      | [] -> _out
-      | entry::rest -> 
-        helper rest (stringConcat _out.text entry)
-    helper words { text=String.Empty; length=0 }
-
   // Searchs a list with (x,y) coordinate entries, return an adjacent entry to the input
   let tryFindAdjacentFromList (r, c) coords = 
     let rec helper candidates entry =
       match candidates, entry=None with
-      | [], _ -> None
-      | _, false -> entry
+      | [], _ | _, false -> entry
       | (row, column)::t, _ ->  
         let entry = List.tryFind (fun coordEntry -> coordEntry = (row, column) ) coords
         helper t entry
@@ -115,22 +113,26 @@ module Utils =
   let removeEntryFromList (row, column) coords = 
     List.filter (fun coordEntry -> coordEntry <> (row, column) ) coords
 
+  let pathfinder start coords = failwith ""
+
   let searchForRivers (lineWidth:int) (words:string list) =
     let rec helper coords maxLength =
       match coords with
-      | [] -> maxLength+1
-      | h::t ->
-        match (tryFindAdjacentFromList h t) with
-        | None -> 
-          let (h::t) = rest
-          helper (maxLength+1) h t
-        | Some v -> 
-          tryFindAdjacentFromList v t
-
-
+      | [] -> maxLength
+      | h::t -> max maxLength (List.length (pathfinder h t))
+      
     let resizedStrList = reshape lineWidth words
     let coords = List.rev (flattenListToCoordinates resizedStrList)
     helper coords 0 
+
+  
+  let stringConcatList (words:string list) =
+    let rec helper _in _out =
+      match _in with
+      | [] -> _out
+      | entry::rest -> 
+        helper rest (stringConcat _out.text entry)
+    helper words { text=String.Empty; length=0 }
 
   let processInput (input:string) =
     let words = stringSplit input ' ' Default
