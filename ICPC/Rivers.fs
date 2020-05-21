@@ -85,6 +85,10 @@ module Utils =
         helper t (index+1) coords
     helper words 0 []
 
+  
+  let removeEntryFromList (row, column) coords = 
+    List.filter (fun coordEntry -> coordEntry <> (row, column) ) coords
+
   // Searchs a list with (x,y) coordinate entries, return an adjacent entry to the input
   let tryFindAdjacentFromList (r, c) coords = 
     let rec helper candidates entry =
@@ -98,20 +102,25 @@ module Utils =
     let candidates = (row, c-1)::(row, c)::(row, c+1)::[]
     helper candidates None
 
-  let removeEntryFromList (row, column) coords = 
-    List.filter (fun coordEntry -> coordEntry <> (row, column) ) coords
+  let pathfinder coords start = 
+    let rec helper _in _out start =
+      match coords with
+      | [] -> _out
+      | v -> 
+        tryFindAdjacentFromList start _in
 
-  let pathfinder start coords = failwith ""
+    helper coords [] start
 
   let searchForRivers (lineWidth:int) (words:string list) =
     let rec helper coords maxLength =
       match coords with
       | [] -> maxLength
-      | h::t -> max maxLength (List.length (pathfinder h t))
+      | h::t -> max maxLength (List.length (pathfinder t h))
       
     let resizedStrList = reshape lineWidth words
     let coords = List.rev (flattenListToCoordinates resizedStrList)
     helper coords 0 
+
 
   
   let stringConcatList (words:string list) =
