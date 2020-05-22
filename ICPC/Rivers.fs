@@ -84,6 +84,24 @@ module Utils =
         let coords = (getWhitespaceCoordinates h index)@_out
         helper t (index+1) coords
     helper words 0 []
+    
+    
+    list.map(fun wsp ->                      //moving through the list of whitespace
+                let (x,y) = wsp              // captures the cooridinates 
+                let z = y + 1                // moves to the column below
+                match y > 0 with                 
+                |true -> 
+                      match list.exist((x-1,y-1) | (x,y-1) | (x+1,y-1))  with 
+                       |true ->  move to the next in list of whitespaces //river already exists therefore move on 
+                       |false -> continue
+                |false -> 
+                  for i = x-1;i < x+2; i++ : 
+                    match list.map(fun q -> q = (i,z)) with 
+                    |true -> tpRivier += 1 
+                    |false -> continue 
+                  match River < tpRiver with 
+                  |true -> River = tpRiver 
+                  |false -> continue 
 
   
   let removeEntryFromList (row, column) coords = 
